@@ -88,11 +88,12 @@ export default function LandingPage() {
                 };
               }));
             } else if (eventType === 'tour_ready') {
-              // Save gameId so we can redirect later
-              gameIdRef = data.gameId as string;
-              setSteps(prev => prev.map(s => s.key === 'generating_tour' ? { ...s, done: true, active: false } : s));
+              // Redirect NOW — let rooms generate in the background.
+              // The game page will show Mike's tour first, and rooms
+              // will be available by the time the user finishes it.
+              const gid = data.gameId as string;
+              if (gid) { router.push(`/g/${gid}`); return; }
             } else if (eventType === 'complete') {
-              // All content ready — redirect to game
               const gid = (data.gameId as string) || gameIdRef;
               if (gid) { router.push(`/g/${gid}`); return; }
             } else if (eventType === 'error') {

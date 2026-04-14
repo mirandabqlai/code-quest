@@ -6,7 +6,7 @@
 
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import type { GameContentV2, GameStateV2 } from '@/lib/game/types-v2';
 import { createInitialStateV2, getLevelInfo } from '@/lib/game/xp';
 import PixelOffice from './PixelOffice';
@@ -19,11 +19,19 @@ interface GameShellV2Props {
   content: GameContentV2;
 }
 
-export default function GameShellV2({ content }: GameShellV2Props) {
+export default function GameShellV2({ content: initialContent }: GameShellV2Props) {
+  const [content, setContent] = useState(initialContent);
   const [gameState, setGameState] = useState<GameStateV2>(createInitialStateV2);
-  // Tracks which room Mike is pointing at during the guided tour,
-  // so the PixelOffice can animate the camera to that room.
   const [tourTargetRoomId, setTourTargetRoomId] = useState<string | null>(null);
+
+  // If room content is empty, rooms are still generating in the background.
+  // Auto-reload the page every 10s until content arrives.
+  const roomsEmpty = Object.keys(content.roomContent).length === 0;
+  useEffect(() => {
+    if (!roomsEmpty) return;
+    const timer = setTimeout(() => window.location.reload(), 10000);
+    return () => clearTimeout(timer);
+  }, [roomsEmpty]);
 
   const addXP = useCallback((amount: number) => {
     setGameState(prev => ({ ...prev, xp: prev.xp + amount }));
@@ -119,7 +127,8 @@ export default function GameShellV2({ content }: GameShellV2Props) {
                 layout={content.office}
                 characters={content.characters}
                 gameState={gameState}
-                onRoomClick={selectRoom}
+                onRoomClick={roomsEmpty ? () => {} : selectRoom}
+                roomsLoading={roomsEmpty}
               />
             )}
           </div>

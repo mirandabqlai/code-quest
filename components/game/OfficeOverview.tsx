@@ -9,6 +9,7 @@ interface OfficeOverviewProps {
   characters: GameCharacter[];
   gameState: GameStateV2;
   onRoomClick: (roomId: string) => void;
+  roomsLoading?: boolean;
 }
 
 /**
@@ -16,7 +17,7 @@ interface OfficeOverviewProps {
  * Shows a list of all rooms with mastery status indicators (📖 💻 🎮).
  * The mastery progress bar fills as more rooms are completed.
  */
-export default function OfficeOverview({ layout, characters, gameState, onRoomClick }: OfficeOverviewProps) {
+export default function OfficeOverview({ layout, characters, gameState, onRoomClick, roomsLoading }: OfficeOverviewProps) {
   const mastered = countMasteredRooms(gameState);
 
   return (
@@ -31,8 +32,27 @@ export default function OfficeOverview({ layout, characters, gameState, onRoomCl
       >
         THE OFFICE
       </div>
+
+      {roomsLoading && (
+        <div style={{
+          background: 'rgba(0,255,65,0.08)',
+          border: '1px solid var(--neon-green)',
+          borderRadius: '3px',
+          padding: '10px 14px',
+          marginBottom: '16px',
+          fontFamily: 'var(--font-pixel)',
+          fontSize: '8px',
+          color: 'var(--neon-green)',
+          textAlign: 'center',
+        }}>
+          GENERATING ROOM CONTENT... REFRESHING AUTOMATICALLY
+        </div>
+      )}
+
       <div style={{ fontSize: '13px', color: 'var(--text-dim)', marginBottom: '16px', fontFamily: 'var(--font-body)' }}>
-        Click a room to explore. Master 3 rooms to unlock the Boss Battle.
+        {roomsLoading
+          ? "Mike's tour is ready! Room content is still being generated — it'll appear shortly."
+          : 'Click a room to explore. Master 3 rooms to unlock the Boss Battle.'}
       </div>
 
       {/* Project structure — shows which folders map to which rooms */}
