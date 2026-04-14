@@ -144,6 +144,40 @@ export default function LandingPage() {
             teaches how the code works — no coding knowledge required.
           </p>
           <RepoInput onSubmit={handleGenerate} />
+
+          {/* Divider between repo flow and Academy */}
+          <div className="flex items-center gap-3 w-full max-w-lg mt-2">
+            <div className="flex-1 h-px bg-[var(--border-pixel)]" />
+            <span
+              className="text-[var(--text-dim)] uppercase"
+              style={{ fontFamily: 'var(--font-pixel)', fontSize: '7px', letterSpacing: '2px' }}
+            >
+              OR
+            </span>
+            <div className="flex-1 h-px bg-[var(--border-pixel)]" />
+          </div>
+
+          {/* AI Academy entry point */}
+          <button
+            onClick={() => router.push('/academy')}
+            className="
+              uppercase tracking-[3px] text-[var(--neon-purple)]
+              bg-[var(--bg-panel)] border-[3px] border-[var(--neon-purple)] cursor-pointer
+              px-6 py-3 transition-all duration-100
+              hover:bg-[var(--border-pixel)] hover:-translate-x-0.5 hover:-translate-y-0.5
+              hover:shadow-[2px_2px_0_var(--neon-purple)]
+              active:translate-x-0 active:translate-y-0 active:shadow-none
+            "
+            style={{ fontFamily: 'var(--font-pixel)', fontSize: '10px' }}
+          >
+            AI ACADEMY
+          </button>
+          <p
+            className="text-[var(--text-dim)] text-center text-xs -mt-3"
+            style={{ fontFamily: 'var(--font-body)' }}
+          >
+            Learn AI fundamentals through 17 mini-games (~2 hours)
+          </p>
         </>
       ) : (
         <GenerationProgress steps={steps} error={error} />
