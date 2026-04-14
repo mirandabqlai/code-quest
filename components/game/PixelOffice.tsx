@@ -117,43 +117,19 @@ export default function PixelOffice({
     resize();
     window.addEventListener('resize', resize);
 
-    const loop = new GameLoop({
-      update(dt) {
-        const state = stateRef.current;
-        if (!state) return;
-        updateCharacters(state, dt);
-        updateCamera(cameraRef.current, dt);
-      },
-      draw() {
-        const state = stateRef.current;
-        if (!state) return;
-
-        const allChars = state.mikeCharacter
-          ? [...state.characters, state.mikeCharacter]
-          : state.characters;
-
-        renderScene(
-          ctx,
-          state.tileMap,
-          cameraRef.current,
-          state.furniture,
-          allChars,
-          canvas.width,
-          canvas.height
-        );
-      },
-    });
-
-    // The game loop calls update but we need to call draw from it too
-    // Let's fix the loop to call both
-    const animLoop = {
+    // The game loop calls update() every frame. We do both physics and
+    // rendering inside update() because the GameLoop.tick only invokes update,
+    // not draw (draw requires a ctx which tick doesn't have).
+    const gameLoop = new GameLoop({
       update(dt: number) {
         const state = stateRef.current;
         if (!state) return;
+
+        // Physics: move characters, advance animations
         updateCharacters(state, dt);
         updateCamera(cameraRef.current, dt);
 
-        // Draw after update
+        // Render: draw the full scene (tiles, furniture, characters, scanlines)
         const allChars = state.mikeCharacter
           ? [...state.characters, state.mikeCharacter]
           : state.characters;
@@ -168,10 +144,8 @@ export default function PixelOffice({
           canvas.height
         );
       },
-      draw() {}, // handled in update
-    };
-
-    const gameLoop = new GameLoop(animLoop);
+      draw() {}, // rendering is handled inside update() above
+    });
     loopRef.current = gameLoop;
     gameLoop.start();
 

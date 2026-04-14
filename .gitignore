@@ -19,3 +19,5 @@ out/
 
 # Superpowers brainstorm state (ephemeral)
 .superpowers/
+.vercel
+.env*.local
