@@ -52,7 +52,7 @@ export type MiniGame =
   | { type: 'server-plugboard'; services: { id: string; name: string; icon: string }[]; testQueries: { question: string; requiredService: string }[] }
   | { type: 'api-playground'; defaults: { model: string; messages: { role: string; content: string }[] }; experiments: { change: string; effect: string }[] }
   | { type: 'factory-floor'; machines: { id: string; name: string; type: string }[]; pipelines: { name: string; correctOrder: string[]; description: string }[] }
-  | { type: 'final-mission'; stages: { title: string; mechanic: string; data: unknown }[] };
+  | { type: 'final-mission'; stages: { title: string; type: string; options: { text: string; correct: boolean; explanation: string }[] }[] };
 
 // ===== FILE SYSTEM (for the File Explorer mini-game) =====
 // A tree structure that mimics a real computer's directory layout.
