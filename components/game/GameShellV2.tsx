@@ -120,6 +120,7 @@ export default function GameShellV2({ content }: GameShellV2Props) {
                 characters={content.characters}
                 gameState={gameState}
                 onRoomClick={selectRoom}
+                meta={content.meta}
               />
             )}
           </div>

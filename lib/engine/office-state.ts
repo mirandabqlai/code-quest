@@ -28,6 +28,15 @@ export function createOfficeState(
   const furniture: FurnitureItem[] = [];
   const engineChars: EngineCharacter[] = [];
 
+  // Place Mike's desk in the manager strip at the top
+  const mikeCenter = getRoomCenter(tileMap, 'mike');
+  if (mikeCenter) {
+    const mikeTileX = Math.floor(mikeCenter.x / TILE_SIZE) - 2;
+    const mikeTileY = 0;
+    const mikeDeskFurniture = getFurnitureForRoom('reception', mikeTileX, mikeTileY);
+    furniture.push(...mikeDeskFurniture);
+  }
+
   for (const room of layout.rooms) {
     const bounds = tileMap.rooms.get(room.id);
     if (!bounds) continue;
