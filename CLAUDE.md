@@ -4,7 +4,30 @@
 A web app where users paste a GitHub repo URL and get a retro pixel-art arcade game that teaches how that codebase works. No coding knowledge required.
 
 ## Status
-Pre-implementation. Design spec and implementation plan are complete. The project has not been scaffolded yet — Task 1 of the plan initializes the Next.js project in this directory.
+**Deployed and functional.** All 15 implementation plan tasks are complete. The app is live at https://code-quest-two-rose.vercel.app and the repo is at https://github.com/mirandabqlai/code-quest.
+
+### What's done
+- Full 5-step AI generation pipeline (repo read → Claude analysis → tour → modes → boss)
+- Landing page with URL input + SSE progress streaming
+- Game page with split layout: folder tree + office (left), 6 game modes (right)
+- XP system, levels, streaks, mode unlocking
+- Neon Postgres database for game caching
+- Production deployment on Vercel
+
+### Known gaps to fix
+1. **Vercel Hobby 60s timeout** — Steps 4-5 may timeout. Need Vercel Pro ($20/mo) or split into separate requests
+2. **Pixel art sprites** — still emoji-based fallbacks, not 32x32 PNG sprite sheets from the spec
+3. **GitHub OAuth** — private repo support not built (api/github/callback route missing)
+4. **Example games on landing** — spec says clickable example cards, not implemented
+5. **Mobile responsive** — spec describes compact horizontal strip layout, not built
+6. **Sound wiring** — SoundManager exists but not connected to all game mode interactions
+7. **Rate limiting** — no IP throttling on /api/generate
+
+### Bug fixes applied
+- `extractJSON()` strips markdown fences from Claude responses
+- `withRetry()` handles transient 529 API overload errors
+- Font loading switched to `next/font/google` for reliable rendering
+- Left panel redesigned: always-visible folder tree + CSS pixel-art office with furniture
 
 ## Key Documents
 - **Design Spec:** `docs/superpowers/specs/2026-04-14-code-quest-design.md` — full architecture, types, pipeline, UI
