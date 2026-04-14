@@ -1,17 +1,22 @@
 // lib/engine/tile-map.ts
 //
-// The tile map defines the office grid. Each room occupies a rectangular
-// area of tiles. Walls separate rooms, doorways connect them.
+// Open-floor office layout. Rooms are distinguished by floor color,
+// not walls. Thin border tiles mark room boundaries. The result looks
+// like one big office with different "zones" — like a real open-plan office.
 
 import type { OfficeLayout, Room, Connection } from '@/lib/game/types-v2';
 
 export const TILE_SIZE = 16;      // pixels per tile
 export const ROOM_WIDTH = 12;     // tiles per room (horizontal)
 export const ROOM_HEIGHT = 10;    // tiles per room (vertical)
-export const WALL_THICKNESS = 1;  // tiles for walls between rooms
-export const DOORWAY_WIDTH = 2;   // tiles wide for doorway openings
+export const WALL_THICKNESS = 0;  // no walls between rooms — open floor
+export const BORDER_THICKNESS = 1; // thin floor border between rooms
+export const DOORWAY_WIDTH = 2;   // tiles wide for doorway openings (unused in open floor)
 
-export type TileType = 'floor' | 'wall' | 'doorway' | 'void';
+// Top strip for Mike's manager area
+export const MIKE_STRIP_HEIGHT = 3;
+
+export type TileType = 'floor' | 'wall' | 'border' | 'mike-floor' | 'void';
 
 export interface Tile {
   type: TileType;
@@ -26,34 +31,45 @@ export interface TileMap {
   rooms: Map<string, { x: number; y: number; w: number; h: number }>; // room bounds in tiles
 }
 
-/** Build a tile map from the AI-generated office layout */
+/** Build an open-floor tile map from the AI-generated office layout */
 export function buildTileMap(layout: OfficeLayout): TileMap {
-  const { rooms, connections, gridCols, gridRows } = layout;
+  const { rooms, gridCols, gridRows } = layout;
 
-  // Total grid size in tiles, including walls between rooms
-  const totalW = gridCols * ROOM_WIDTH + (gridCols + 1) * WALL_THICKNESS;
-  const totalH = gridRows * ROOM_HEIGHT + (gridRows + 1) * WALL_THICKNESS;
+  // Total grid size — rooms sit directly next to each other with 1-tile borders
+  const totalW = gridCols * ROOM_WIDTH + (gridCols - 1) * BORDER_THICKNESS + 2; // +2 for outer edges
+  const totalH = MIKE_STRIP_HEIGHT + gridRows * ROOM_HEIGHT + (gridRows - 1) * BORDER_THICKNESS + 2;
 
-  // Initialize all tiles as void
+  // Initialize all tiles as a neutral dark floor (the "hallway")
   const tiles: Tile[][] = Array.from({ length: totalH }, () =>
     Array.from({ length: totalW }, () => ({
-      type: 'void' as TileType,
+      type: 'floor' as TileType,
       roomId: null,
-      color: '#0f0f23',
+      color: '#1a1a2e', // neutral hallway color
     }))
   );
 
   // Room bounds lookup
   const roomBounds = new Map<string, { x: number; y: number; w: number; h: number }>();
 
-  // Place rooms
+  // Mike's strip at the top — a distinct manager area
+  for (let row = 0; row < MIKE_STRIP_HEIGHT; row++) {
+    for (let col = 0; col < totalW; col++) {
+      tiles[row][col] = {
+        type: 'mike-floor',
+        roomId: 'mike',
+        color: '#1a2a1e', // dark green tint for Mike's area
+      };
+    }
+  }
+
+  // Place rooms below Mike's strip
   for (const room of rooms) {
-    const startX = WALL_THICKNESS + room.position.col * (ROOM_WIDTH + WALL_THICKNESS);
-    const startY = WALL_THICKNESS + room.position.row * (ROOM_HEIGHT + WALL_THICKNESS);
+    const startX = 1 + room.position.col * (ROOM_WIDTH + BORDER_THICKNESS);
+    const startY = MIKE_STRIP_HEIGHT + 1 + room.position.row * (ROOM_HEIGHT + BORDER_THICKNESS);
 
     roomBounds.set(room.id, { x: startX, y: startY, w: ROOM_WIDTH, h: ROOM_HEIGHT });
 
-    // Fill room tiles with floor
+    // Fill room tiles with the room's floor color
     for (let row = startY; row < startY + ROOM_HEIGHT; row++) {
       for (let col = startX; col < startX + ROOM_WIDTH; col++) {
         if (row < totalH && col < totalW) {
@@ -67,89 +83,50 @@ export function buildTileMap(layout: OfficeLayout): TileMap {
     }
   }
 
-  // Place walls around rooms (tiles between rooms that aren't void)
+  // Add thin border lines between rooms (subtle dividers, not walls)
   for (let row = 0; row < totalH; row++) {
     for (let col = 0; col < totalW; col++) {
-      if (tiles[row][col].type === 'void') {
-        // Check if adjacent to any floor tile
-        const neighbors = [
-          row > 0 ? tiles[row - 1][col] : null,
-          row < totalH - 1 ? tiles[row + 1][col] : null,
-          col > 0 ? tiles[row][col - 1] : null,
-          col < totalW - 1 ? tiles[row][col + 1] : null,
-        ];
-        const hasFloorNeighbor = neighbors.some(n => n?.type === 'floor');
-        if (hasFloorNeighbor) {
-          tiles[row][col] = { type: 'wall', roomId: null, color: '#2c2c54' };
-        }
+      const tile = tiles[row][col];
+      if (tile.roomId !== null) continue; // skip room tiles and mike tiles
+      if (tile.type === 'mike-floor') continue;
+
+      // Check if this neutral tile is between two different rooms
+      const neighbors = [
+        row > 0 ? tiles[row - 1][col] : null,
+        row < totalH - 1 ? tiles[row + 1][col] : null,
+        col > 0 ? tiles[row][col - 1] : null,
+        col < totalW - 1 ? tiles[row][col + 1] : null,
+      ];
+      const adjacentRooms = neighbors
+        .filter(n => n?.roomId && n.roomId !== 'mike')
+        .map(n => n!.roomId);
+
+      if (adjacentRooms.length >= 2) {
+        // This tile is between rooms — make it a subtle border
+        tiles[row][col] = { type: 'border', roomId: null, color: '#2c2c54' };
       }
     }
   }
 
-  // Carve doorways for connections
-  for (const conn of connections) {
-    const boundsA = roomBounds.get(conn.from);
-    const boundsB = roomBounds.get(conn.to);
-    if (!boundsA || !boundsB) continue;
-
-    carveDoorway(tiles, boundsA, boundsB, conn);
+  // Outer walls — only on the very edges of the office
+  for (let col = 0; col < totalW; col++) {
+    if (tiles[MIKE_STRIP_HEIGHT][col].type !== 'mike-floor') {
+      // Don't overwrite mike area
+    }
+    // Top wall (above Mike's area)
+    // Bottom wall
+    if (totalH - 1 >= 0) {
+      tiles[totalH - 1][col] = { type: 'wall', roomId: null, color: '#2c2c54' };
+    }
+  }
+  for (let row = 0; row < totalH; row++) {
+    tiles[row][0] = { type: 'wall', roomId: null, color: '#2c2c54' };
+    if (totalW - 1 >= 0) {
+      tiles[row][totalW - 1] = { type: 'wall', roomId: null, color: '#2c2c54' };
+    }
   }
 
   return { width: totalW, height: totalH, tiles, rooms: roomBounds };
-}
-
-/** Carve a doorway between two adjacent rooms */
-function carveDoorway(
-  tiles: Tile[][],
-  a: { x: number; y: number; w: number; h: number },
-  b: { x: number; y: number; w: number; h: number },
-  conn: Connection
-): void {
-  // Determine if rooms are horizontally or vertically adjacent
-  const isHorizontal = a.y === b.y; // same row
-  const isVertical = a.x === b.x;   // same column
-
-  if (isHorizontal) {
-    // Doorway in the wall between left and right rooms
-    const leftRoom = a.x < b.x ? a : b;
-    const rightRoom = a.x < b.x ? b : a;
-    const wallCol = leftRoom.x + leftRoom.w; // the wall column
-    const doorY = leftRoom.y + Math.floor(leftRoom.h / 2) - Math.floor(DOORWAY_WIDTH / 2);
-
-    for (let i = 0; i < DOORWAY_WIDTH; i++) {
-      const row = doorY + i;
-      // The wall might be multiple tiles thick
-      for (let col = wallCol; col < rightRoom.x; col++) {
-        if (row >= 0 && row < tiles.length && col >= 0 && col < tiles[0].length) {
-          tiles[row][col] = {
-            type: 'doorway',
-            roomId: null,
-            color: '#1a1a2e', // darker floor for doorways
-          };
-        }
-      }
-    }
-  } else if (isVertical) {
-    // Doorway in the wall between top and bottom rooms
-    const topRoom = a.y < b.y ? a : b;
-    const bottomRoom = a.y < b.y ? b : a;
-    const wallRow = topRoom.y + topRoom.h;
-    const doorX = topRoom.x + Math.floor(topRoom.w / 2) - Math.floor(DOORWAY_WIDTH / 2);
-
-    for (let i = 0; i < DOORWAY_WIDTH; i++) {
-      const col = doorX + i;
-      for (let row = wallRow; row < bottomRoom.y; row++) {
-        if (row >= 0 && row < tiles.length && col >= 0 && col < tiles[0].length) {
-          tiles[row][col] = {
-            type: 'doorway',
-            roomId: null,
-            color: '#1a1a2e',
-          };
-        }
-      }
-    }
-  }
-  // If rooms are diagonal, skip doorway (AI should avoid this)
 }
 
 /** Convert tile coordinates to pixel coordinates */
@@ -167,6 +144,13 @@ export function pixelToTile(pixelX: number, pixelY: number): { col: number; row:
 
 /** Get the center pixel position of a room */
 export function getRoomCenter(tileMap: TileMap, roomId: string): { x: number; y: number } | null {
+  if (roomId === 'mike') {
+    // Mike's area is the top strip
+    return {
+      x: (tileMap.width / 2) * TILE_SIZE,
+      y: (MIKE_STRIP_HEIGHT / 2) * TILE_SIZE,
+    };
+  }
   const bounds = tileMap.rooms.get(roomId);
   if (!bounds) return null;
   return {

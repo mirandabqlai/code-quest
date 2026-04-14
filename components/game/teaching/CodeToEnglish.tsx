@@ -11,122 +11,136 @@ interface CodeToEnglishProps {
 }
 
 /**
- * Side-by-side view: real code on the left, plain English on the right.
- * Hover a line on either side to highlight the matching line.
+ * Row-based layout: each code line sits next to its English explanation.
+ * Hover a row to highlight both sides. Lines always stay aligned.
  */
 export default function CodeToEnglish({ block, glossary }: CodeToEnglishProps) {
   const [hoveredLine, setHoveredLine] = useState<number | null>(null);
 
   return (
-    <div style={{ marginBottom: '16px' }}>
-      {/* File path label */}
+    <div
+      style={{
+        marginBottom: '16px',
+        background: 'var(--bg-void)',
+        border: '1px solid var(--border-pixel)',
+        borderRadius: '4px',
+        overflow: 'hidden',
+      }}
+    >
+      {/* File path header */}
       <div
         style={{
-          fontFamily: 'var(--font-pixel)',
-          fontSize: '7px',
-          color: 'var(--text-dim)',
-          marginBottom: '6px',
-          letterSpacing: '1px',
+          padding: '8px 12px',
+          background: 'var(--bg-dark)',
+          borderBottom: '1px solid var(--border-pixel)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
         }}
       >
-        {block.file}:{block.startLine}
+        <span
+          style={{
+            fontFamily: 'var(--font-code)',
+            fontSize: '11px',
+            color: 'var(--neon-green)',
+          }}
+        >
+          {block.file}
+        </span>
+        <span
+          style={{
+            fontFamily: 'var(--font-pixel)',
+            fontSize: '6px',
+            color: 'var(--text-dim)',
+          }}
+        >
+          LINE {block.startLine}
+        </span>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', minHeight: '120px' }}>
-        {/* Code side */}
-        <div>
-          <div
-            style={{
-              fontFamily: 'var(--font-pixel)',
-              fontSize: '7px',
-              color: 'var(--neon-gold)',
-              marginBottom: '6px',
-            }}
-          >
-            CODE
-          </div>
-          <div
-            style={{
-              background: 'var(--bg-void)',
-              border: '1px solid var(--border-pixel)',
-              borderRadius: '3px',
-              padding: '10px',
-              fontFamily: 'var(--font-code)',
-              fontSize: '12px',
-              lineHeight: '1.8',
-              color: 'var(--text-code)',
-              overflowX: 'auto',
-            }}
-          >
-            {block.code.map((line, i) => (
-              <div
-                key={i}
-                onMouseEnter={() => setHoveredLine(i)}
-                onMouseLeave={() => setHoveredLine(null)}
-                style={{
-                  padding: '1px 4px',
-                  background: hoveredLine === i
-                    ? 'rgba(78, 205, 196, 0.1)'
-                    : 'transparent',
-                  borderLeft: hoveredLine === i
-                    ? '2px solid var(--neon-blue)'
-                    : '2px solid transparent',
-                  transition: 'all 0.15s',
-                  whiteSpace: 'pre',
-                }}
-              >
-                {line}
-              </div>
-            ))}
-          </div>
+      {/* Column headers */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          borderBottom: '1px solid var(--border-pixel)',
+        }}
+      >
+        <div
+          style={{
+            padding: '6px 12px',
+            fontFamily: 'var(--font-pixel)',
+            fontSize: '7px',
+            color: 'var(--neon-gold)',
+            borderRight: '1px solid var(--border-pixel)',
+          }}
+        >
+          CODE
         </div>
-
-        {/* English side */}
-        <div>
-          <div
-            style={{
-              fontFamily: 'var(--font-pixel)',
-              fontSize: '7px',
-              color: 'var(--neon-gold)',
-              marginBottom: '6px',
-            }}
-          >
-            PLAIN ENGLISH
-          </div>
-          <div
-            style={{
-              fontSize: '13px',
-              lineHeight: '1.8',
-              color: 'var(--text-primary)',
-              fontFamily: 'var(--font-body)',
-              background: 'var(--bg-void)',
-              border: '1px solid var(--border-pixel)',
-              borderRadius: '3px',
-              padding: '10px',
-            }}
-          >
-            {block.english.map((line, i) => (
-              <div
-                key={i}
-                onMouseEnter={() => setHoveredLine(i)}
-                onMouseLeave={() => setHoveredLine(null)}
-                style={{
-                  padding: '2px 8px',
-                  borderLeft: hoveredLine === i
-                    ? '2px solid var(--neon-blue)'
-                    : '2px solid transparent',
-                  background: hoveredLine === i
-                    ? 'rgba(78, 205, 196, 0.06)'
-                    : 'transparent',
-                  transition: 'all 0.15s',
-                }}
-              >
-                {renderWithGlossary(line, glossary)}
-              </div>
-            ))}
-          </div>
+        <div
+          style={{
+            padding: '6px 12px',
+            fontFamily: 'var(--font-pixel)',
+            fontSize: '7px',
+            color: 'var(--neon-gold)',
+          }}
+        >
+          PLAIN ENGLISH
         </div>
       </div>
+
+      {/* Row-by-row: code line ↔ English explanation */}
+      {block.code.map((codeLine, i) => {
+        const englishLine = block.english[i] ?? '';
+        const isHovered = hoveredLine === i;
+
+        return (
+          <div
+            key={i}
+            onMouseEnter={() => setHoveredLine(i)}
+            onMouseLeave={() => setHoveredLine(null)}
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              borderBottom: i < block.code.length - 1 ? '1px solid rgba(58,58,92,0.3)' : 'none',
+              background: isHovered ? 'rgba(78, 205, 196, 0.06)' : 'transparent',
+              transition: 'background 0.15s',
+              cursor: 'default',
+            }}
+          >
+            {/* Code cell */}
+            <div
+              style={{
+                padding: '6px 12px',
+                fontFamily: 'var(--font-code)',
+                fontSize: '12px',
+                color: 'var(--text-code)',
+                whiteSpace: 'pre',
+                overflowX: 'auto',
+                borderRight: '1px solid var(--border-pixel)',
+                borderLeft: isHovered ? '3px solid var(--neon-blue)' : '3px solid transparent',
+              }}
+            >
+              {codeLine}
+            </div>
+
+            {/* English cell */}
+            <div
+              style={{
+                padding: '6px 12px',
+                fontSize: '12px',
+                lineHeight: '1.5',
+                color: 'var(--text-primary)',
+                fontFamily: 'var(--font-body)',
+                display: 'flex',
+                alignItems: 'center',
+              }}
+            >
+              {renderWithGlossary(englishLine, glossary)}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -136,12 +150,10 @@ export default function CodeToEnglish({ block, glossary }: CodeToEnglishProps) {
  * Terms are marked with [[term]] syntax in the AI-generated English text.
  */
 function renderWithGlossary(text: string, glossary: GlossaryTerm[]): React.ReactNode {
-  // Split on [[term]] markers
   const parts = text.split(/\[\[([^\]]+)\]\]/g);
 
   return parts.map((part, i) => {
     if (i % 2 === 1) {
-      // This is a glossary term
       return (
         <GlossaryTooltip key={i} term={part} glossary={glossary}>
           {part}

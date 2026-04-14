@@ -99,13 +99,21 @@ function drawTiles(
       if (tile.type === 'wall') {
         ctx.fillStyle = '#2c2c54';
         ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
-        // Wall top highlight
         ctx.fillStyle = '#3a3a5c';
         ctx.fillRect(x, y, TILE_SIZE, 2);
-      } else {
-        // Floor — checkered pattern
+      } else if (tile.type === 'border') {
+        // Subtle divider between rooms — thin line, not a wall
+        ctx.fillStyle = '#252540';
+        ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+      } else if (tile.type === 'mike-floor') {
+        // Mike's manager area — slightly different pattern
         const isLight = (row + col) % 2 === 0;
-        ctx.fillStyle = isLight ? tile.color : darken(tile.color, 15);
+        ctx.fillStyle = isLight ? '#1a2a1e' : '#162518';
+        ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+      } else {
+        // Room floor — checkered pattern using room's color
+        const isLight = (row + col) % 2 === 0;
+        ctx.fillStyle = isLight ? tile.color : darken(tile.color, 10);
         ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
       }
     }
