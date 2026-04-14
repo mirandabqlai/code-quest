@@ -1,14 +1,17 @@
 import { NextRequest } from 'next/server';
 import { parseGitHubUrl, readRepo } from '@/lib/github/read-repo';
-import { analyzeRepo } from '@/lib/ai/analyze-repo';
-import { generateTour } from '@/lib/ai/generate-tour';
-import { generateModes } from '@/lib/ai/generate-modes';
-import { generateAdvanced } from '@/lib/ai/generate-advanced';
+import { ANALYSIS_V2_PROMPT, buildSnapshotContext, extractJSON, withRetry } from '@/lib/ai/prompts-v2';
+import { generateMikeTour } from '@/lib/ai/generate-mike-tour';
+import { generateRoomContent } from '@/lib/ai/generate-room-content';
+import Anthropic from '@anthropic-ai/sdk';
+import type { OfficeLayout, GameCharacter } from '@/lib/game/types-v2';
 import {
   createGame, getGameByRepo,
   updateGameStatus, updateGameAnalysis,
-  updateGameTourContent, updateGameModesContent, updateGameAdvancedContent,
+  updateGameOfficeLayout, updateGameMikeContent, updateGameRoomContent,
 } from '@/lib/db/queries';
+
+const client = new Anthropic();
 
 export const maxDuration = 120; // Vercel Pro: up to 300s
 
@@ -38,37 +41,81 @@ export async function POST(request: NextRequest) {
       };
 
       try {
-        // Step 1: Read repo
+        // === Step 1: Read repo ===
         send('status', { step: 'reading', message: 'Reading repository...' });
         await updateGameStatus(gameId, 'reading');
         const snapshot = await readRepo(parsed.owner, parsed.repo);
         send('status', { step: 'reading_done', message: `Found ${snapshot.fileTree.length} files, reading ${snapshot.files.length} key files` });
 
-        // Step 2: Analyze
-        send('status', { step: 'analyzing', message: 'Analyzing architecture, casting characters...' });
+        // === Step 2: Analyze repo with v2 prompt ===
+        // v2 analysis returns characters with roomId, plus an office layout object
+        send('status', { step: 'analyzing', message: 'Analyzing architecture, designing office layout...' });
         await updateGameStatus(gameId, 'analyzing');
-        const analysis = await analyzeRepo(snapshot);
-        await updateGameAnalysis(gameId, analysis);
-        send('analysis', { characters: analysis.characters });
 
-        // Step 3: Generate tour
-        send('status', { step: 'generating_tour', message: 'Writing character dialogues and quizzes...' });
+        const context = buildSnapshotContext(snapshot);
+        const analysisResponse = await withRetry(() => client.messages.create({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 8000,
+          messages: [{
+            role: 'user',
+            content: `${ANALYSIS_V2_PROMPT}\n\n${context}`,
+          }],
+        }));
+
+        const analysisText = analysisResponse.content[0].type === 'text' ? analysisResponse.content[0].text : '';
+        const analysisJSON = extractJSON(analysisText);
+        const analysis = JSON.parse(analysisJSON) as {
+          meta: { repoName: string; repoDescription: string; techStack: string[]; generatedAt: string };
+          characters: GameCharacter[];
+          office: OfficeLayout;
+          folderTree: { path: string; indent: number; type: string; owner?: string }[];
+          dataFlows: { id: string; label: string; steps: { characterId: string; action: string }[] }[];
+        };
+
+        // Save analysis to v1 columns for backwards compat, plus office layout to v2 column
+        await updateGameAnalysis(gameId, {
+          characters: analysis.characters,
+          folderTree: analysis.folderTree,
+          dataFlows: analysis.dataFlows,
+        });
+        await updateGameOfficeLayout(gameId, analysis.office);
+
+        send('analysis', { characters: analysis.characters, office: analysis.office });
+
+        // === Step 3: Generate Mike's guided tour ===
+        send('status', { step: 'generating_tour', message: "Mike is preparing your guided tour..." });
         await updateGameStatus(gameId, 'generating');
-        const tourContent = await generateTour(analysis, snapshot);
-        const tourWithMeta = { ...tourContent, meta: analysis.meta };
-        await updateGameTourContent(gameId, tourWithMeta);
+        const mikeTour = await generateMikeTour(analysisJSON);
+        await updateGameMikeContent(gameId, mikeTour);
+
+        // === Step 4: Tour is ready — redirect user to game page ===
+        // The player can start playing (Mike's tour) while room content generates in the background.
         send('tour_ready', { gameId });
 
-        // Step 4: Generate modes (continues in background for the player)
-        send('status', { step: 'generating_modes', message: 'Creating Mail Room and Bug Hunt challenges...' });
-        const modesContent = await generateModes(analysis, snapshot);
-        await updateGameModesContent(gameId, modesContent);
-        send('modes_ready', {});
+        // === Step 5: Generate room content for each character ===
+        // Process rooms sequentially to avoid Claude API rate limits.
+        // Each room gets its own Story/Code/Challenges content.
+        const roomContent: Record<string, import('@/lib/game/types-v2').CharacterContent> = {};
+        const rooms = analysis.office.rooms;
 
-        // Step 5: Generate advanced
-        send('status', { step: 'generating_advanced', message: 'Building Boss Battle scenarios...' });
-        const advancedContent = await generateAdvanced(analysis);
-        await updateGameAdvancedContent(gameId, advancedContent);
+        for (let i = 0; i < rooms.length; i++) {
+          const room = rooms[i];
+          const character = analysis.characters.find(c => c.id === room.characterId);
+          if (!character) continue;
+
+          send('status', {
+            step: 'generating_room',
+            message: `Generating content for ${room.name} (${i + 1}/${rooms.length})...`,
+          });
+
+          const content = await generateRoomContent(character, room, analysisJSON, snapshot);
+          roomContent[room.id] = content;
+        }
+
+        // Save all room content and mark game as complete
+        await updateGameRoomContent(gameId, roomContent);
+
+        // === Step 6: All done ===
         send('complete', { gameId });
 
       } catch (error) {
