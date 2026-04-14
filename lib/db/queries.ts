@@ -1,6 +1,7 @@
 import { sql } from '@vercel/postgres';
 import { nanoid } from 'nanoid';
 import type { GameRow, GameStatus } from '@/lib/game/types';
+import type { MikeTour, OfficeLayout, CharacterContent } from '@/lib/game/types-v2';
 
 export async function createGame(repoUrl: string, repoName: string): Promise<string> {
   const id = nanoid(8);
@@ -60,4 +61,20 @@ export async function updateGameAdvancedContent(id: string, advancedContent: obj
 
 export async function incrementViewCount(id: string) {
   await sql`UPDATE games SET view_count = view_count + 1 WHERE id = ${id}`;
+}
+
+// ===== V2 QUERIES =====
+// These write to the new JSONB columns added for the room-based v2 system.
+// The DB migration (Task 11) adds these columns: office_layout, mike_content, room_content, version.
+
+export async function updateGameOfficeLayout(id: string, layout: OfficeLayout): Promise<void> {
+  await sql`UPDATE games SET office_layout = ${JSON.stringify(layout)} WHERE id = ${id}`;
+}
+
+export async function updateGameMikeContent(id: string, mike: MikeTour): Promise<void> {
+  await sql`UPDATE games SET mike_content = ${JSON.stringify(mike)} WHERE id = ${id}`;
+}
+
+export async function updateGameRoomContent(id: string, roomContent: Record<string, CharacterContent>): Promise<void> {
+  await sql`UPDATE games SET room_content = ${JSON.stringify(roomContent)}, status = 'complete', version = 2 WHERE id = ${id}`;
 }
