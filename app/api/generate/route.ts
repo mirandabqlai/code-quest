@@ -73,6 +73,7 @@ export async function POST(request: NextRequest) {
 
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown error';
+        console.error('[generate] Pipeline error:', error);
         await updateGameStatus(gameId, 'error', message);
 
         if (message === 'REPO_NOT_FOUND') {

@@ -1,5 +1,30 @@
 import type { RepoSnapshot } from '@/lib/github/read-repo';
 
+// Strip markdown code fences that Claude sometimes adds despite instructions
+export function extractJSON(text: string): string {
+  const fenced = text.match(/```(?:json)?\s*\n?([\s\S]*?)\n?\s*```/);
+  if (fenced) return fenced[1].trim();
+  return text.trim();
+}
+
+// Retry wrapper for Claude API calls — handles transient 529 overload errors
+export async function withRetry<T>(fn: () => Promise<T>, maxRetries = 2): Promise<T> {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error: unknown) {
+      const status = (error as { status?: number }).status;
+      if (status === 529 && attempt < maxRetries) {
+        // Wait 3-6 seconds before retry
+        await new Promise(r => setTimeout(r, 3000 + attempt * 3000));
+        continue;
+      }
+      throw error;
+    }
+  }
+  throw new Error('Unreachable');
+}
+
 export function buildSnapshotContext(snapshot: RepoSnapshot): string {
   const treeStr = snapshot.fileTree.slice(0, 200).join('\n');
   const filesStr = snapshot.files
