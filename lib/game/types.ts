@@ -114,6 +114,21 @@ export interface BossBattle {
   stages: BossStage[];
 }
 
+// ===== v2 types — new game system =====
+// All the new interfaces for v2 are in types-v2.ts. We re-export them here
+// so existing imports of '@/lib/game/types' keep working without changes.
+export type {
+  RoomType, Room, Connection, OfficeLayout,
+  GroupChatMessage, DataFlowStep, MikeTour,
+  CodeToEnglishBlock, GlossaryTerm,
+  DialogueStep, DialogueStepType,
+  SmartQuiz, MailSortChallenge, BugHuntRound, BossChallenge,
+  CharacterContent, GameContentV2,
+  AnimationState, Direction, SpriteData, SpriteFrame,
+  CharacterSpriteSet, FurnitureItem, EngineCharacter,
+  RoomProgress, GameStateV2, GameRowV2,
+} from './types-v2';
+
 // ===== Database row shape =====
 
 export type GameStatus = 'pending' | 'reading' | 'analyzing' | 'generating' | 'complete' | 'error';
