@@ -24,9 +24,10 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: 'Invalid GitHub URL' }, { status: 400 });
   }
 
-  // Check cache — if game already exists and is complete, return it
+  // Check cache — if game already exists as v2 and is complete, return it
+  // v1 games are regenerated as v2
   const existing = await getGameByRepo(repoUrl);
-  if (existing && existing.status === 'complete') {
+  if (existing && existing.status === 'complete' && (existing as unknown as { office_layout?: unknown }).office_layout) {
     return Response.json({ gameId: existing.id, cached: true });
   }
 
