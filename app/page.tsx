@@ -7,10 +7,9 @@ import GenerationProgress from '@/components/landing/GenerationProgress';
 
 const INITIAL_STEPS = [
   { key: 'reading', label: 'Reading repository', done: false, active: false },
-  { key: 'analyzing', label: 'Analyzing architecture', done: false, active: false },
-  { key: 'generating_tour', label: 'Writing dialogues', done: false, active: false },
-  { key: 'generating_modes', label: 'Creating challenges', done: false, active: false },
-  { key: 'generating_advanced', label: 'Building boss battles', done: false, active: false },
+  { key: 'analyzing', label: 'Designing office layout', done: false, active: false },
+  { key: 'generating_tour', label: "Mike is preparing your tour", done: false, active: false },
+  { key: 'generating_room', label: 'Building room content', done: false, active: false },
 ];
 
 export default function LandingPage() {
@@ -67,14 +66,25 @@ export default function LandingPage() {
             const data = JSON.parse(line.slice(6));
 
             if (eventType === 'status') {
-              setSteps(prev => prev.map(s => ({
-                ...s,
-                active: s.key === data.step,
-                done: s.done || (s.active && s.key !== data.step),
-              })));
+              const step = data.step as string;
+              setSteps(prev => prev.map(s => {
+                // Mark previous step done when a new step starts
+                // Also handle 'reading_done' → marks 'reading' as done
+                const isDone = s.done
+                  || (step === 'reading_done' && s.key === 'reading')
+                  || (s.active && s.key !== step);
+                return {
+                  ...s,
+                  active: s.key === step,
+                  done: isDone,
+                };
+              }));
             } else if (eventType === 'tour_ready') {
-              // Redirect to game — user can start playing
+              // Mark tour step as done but DON'T redirect yet —
+              // wait for room content to finish so rooms are clickable
               setSteps(prev => prev.map(s => s.key === 'generating_tour' ? { ...s, done: true, active: false } : s));
+            } else if (eventType === 'complete') {
+              // All content ready — NOW redirect to game
               router.push(`/g/${data.gameId}`);
               return;
             } else if (eventType === 'error') {
