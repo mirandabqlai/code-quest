@@ -1,3 +1,5 @@
+import type { GameStateV2, RoomProgress } from './types-v2';
+
 export const LEVELS = [
   { name: 'Observer', xp: 0 },
   { name: 'Intern', xp: 100 },
@@ -85,4 +87,52 @@ export function isUnlocked(mode: string, state: GameState): boolean {
     case 'boss': return state.completedBuild;
     default: return false;
   }
+}
+
+// ===== V2 GAME STATE =====
+
+export function createInitialStateV2(): GameStateV2 {
+  return {
+    xp: 0,
+    level: 1,
+    streak: 0,
+    glitchTokens: 0,
+    achievements: [],
+    mikeTourComplete: false,
+    roomProgress: {},
+    activeRoomId: null,
+    activeTab: null,
+  };
+}
+
+// Returns existing room progress or initializes a blank slate for a new room.
+// Mutates state.roomProgress in place — callers are responsible for managing state immutability.
+export function getRoomProgress(state: GameStateV2, roomId: string): RoomProgress {
+  if (!state.roomProgress[roomId]) {
+    state.roomProgress[roomId] = {
+      storyComplete: false,
+      codeComplete: false,
+      challengesComplete: {
+        quizzes: new Set(),
+        mailSort: new Set(),
+        bugHunt: new Set(),
+        bossComplete: false,
+      },
+    };
+  }
+  return state.roomProgress[roomId];
+}
+
+// A room is "mastered" when the player has finished Story, Code, and the Boss challenge.
+export function isRoomMastered(progress: RoomProgress): boolean {
+  return progress.storyComplete && progress.codeComplete && progress.challengesComplete.bossComplete;
+}
+
+export function countMasteredRooms(state: GameStateV2): number {
+  return Object.values(state.roomProgress).filter(isRoomMastered).length;
+}
+
+// Boss Battle unlocks once the player has mastered at least 3 rooms.
+export function isBossBattleUnlocked(state: GameStateV2): boolean {
+  return countMasteredRooms(state) >= 3;
 }
