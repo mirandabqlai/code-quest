@@ -17,6 +17,8 @@
     --text-code: #00ff41;
     --border-pixel: #3a3a5c;
     --border-bright: #5a5a8c;
+    /* --font-pixel is set by next/font/google on the <html> element.
+       We define a fallback here in case the variable isn't set yet. */
     --font-pixel: 'Press Start 2P', monospace;
     --font-body: 'Courier New', 'Consolas', monospace;
     --font-code: 'Courier New', monospace;

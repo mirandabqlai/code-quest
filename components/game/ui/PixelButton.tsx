@@ -25,7 +25,7 @@ export default function PixelButton({ children, onClick, disabled, variant = 'de
       onClick={onClick}
       disabled={disabled}
       className={`
-        font-[var(--font-pixel)] uppercase tracking-[2px]
+        uppercase tracking-[2px]
         bg-[var(--bg-panel)] border-[3px] cursor-pointer
         transition-all duration-100
         hover:bg-[var(--border-pixel)] hover:-translate-x-0.5 hover:-translate-y-0.5

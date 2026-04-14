@@ -1,5 +1,16 @@
 import type { Metadata } from 'next';
+import { Press_Start_2P } from 'next/font/google';
 import './globals.css';
+
+// Load the pixel font via Next.js font system — this ensures the font is
+// available before first paint (no flash of unstyled text). The `variable`
+// option creates a CSS custom property we can reference anywhere.
+const pixelFont = Press_Start_2P({
+  weight: '400',
+  subsets: ['latin'],
+  variable: '--font-pixel',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: 'Code Quest — Turn Any Codebase Into a Game',
@@ -8,13 +19,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <head>
-        <link
-          href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap"
-          rel="stylesheet"
-        />
-      </head>
+    <html lang="en" className={pixelFont.variable}>
       <body>
         <div className="crt-overlay" />
         {children}
