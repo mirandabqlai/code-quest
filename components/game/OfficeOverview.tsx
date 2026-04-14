@@ -40,12 +40,26 @@ export default function OfficeOverview({ layout, characters, gameState, onRoomCl
           borderRadius: '3px',
           padding: '10px 14px',
           marginBottom: '16px',
-          fontFamily: 'var(--font-pixel)',
-          fontSize: '8px',
-          color: 'var(--neon-green)',
           textAlign: 'center',
         }}>
-          GENERATING ROOM CONTENT... REFRESHING AUTOMATICALLY
+          <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '8px', color: 'var(--neon-green)', marginBottom: '8px' }}>
+            ROOM CONTENT IS STILL GENERATING...
+          </div>
+          <button
+            onClick={() => window.location.reload()}
+            style={{
+              fontFamily: 'var(--font-pixel)',
+              fontSize: '7px',
+              padding: '6px 16px',
+              background: 'var(--bg-dark)',
+              color: 'var(--neon-green)',
+              border: '2px solid var(--neon-green)',
+              borderRadius: '2px',
+              cursor: 'pointer',
+            }}
+          >
+            CHECK AGAIN
+          </button>
         </div>
       )}
 
