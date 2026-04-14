@@ -1,15 +1,11 @@
 // components/game/GameShellV2.tsx
-//
-// Top-level game container for v2. Replaces GameShell for v2 game content.
-// Manages game state (XP, active room, tour progress) and orchestrates
-// the three main views: Mike's tour → office overview → room deep-dive.
-
 'use client';
 
 import { useState, useCallback } from 'react';
 import type { GameContentV2, GameStateV2 } from '@/lib/game/types-v2';
-import { createInitialStateV2, getLevelInfo } from '@/lib/game/xp';
+import { createInitialStateV2 } from '@/lib/game/xp';
 import PixelOffice from './PixelOffice';
+import RoomContext from './RoomContext';
 import RoomHub from './RoomHub';
 import OfficeOverview from './OfficeOverview';
 import MikeTour from './MikeTour';
@@ -40,72 +36,70 @@ export default function GameShellV2({ content }: GameShellV2Props) {
   }, []);
 
   const showingTour = !gameState.mikeTourComplete;
-  const activeContent = gameState.activeRoomId
-    ? content.roomContent[gameState.activeRoomId]
-    : null;
-
-  // No auto-reload — if rooms are empty, OfficeOverview shows a "Check Again" button.
+  const activeRoomId = gameState.activeRoomId;
+  const activeContent = activeRoomId ? content.roomContent[activeRoomId] : null;
+  const activeRoom = activeRoomId ? content.office.rooms.find(r => r.id === activeRoomId) : null;
+  const activeChar = activeRoomId ? content.characters.find(c => c.roomId === activeRoomId) : null;
 
   return (
-    <div
-      className="flex flex-col"
-      style={{
-        height: '100vh',
-        background: 'var(--bg-void)',
-        color: 'var(--text-primary)',
-      }}
-    >
-      {/* XP Bar — XPBar calls getLevelInfo internally, so we only pass xp + tokens */}
-      <XPBar
-        xp={gameState.xp}
-        glitchTokens={gameState.glitchTokens}
-      />
+    <div className="flex flex-col" style={{ height: '100vh', background: 'var(--bg-void)', color: 'var(--text-primary)' }}>
+      <XPBar xp={gameState.xp} glitchTokens={gameState.glitchTokens} />
 
-      {/* Main content: office on the left, interaction panel on the right */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
-        {/* Left: Pixel art office canvas */}
-        <div
-          className="relative"
-          style={{
-            // During tour, office takes full width. Otherwise, it shrinks
-            // to make room for the interaction panel on the right.
-            width: showingTour ? '100%' : gameState.activeRoomId ? '40%' : '45%',
-            transition: 'width 0.3s',
-          }}
-        >
-          <PixelOffice
-            layout={content.office}
-            characters={content.characters}
-            activeRoomId={gameState.activeRoomId}
-            onRoomClick={gameState.mikeTourComplete ? selectRoom : () => {}}
-            tourMode={showingTour}
-            tourTargetRoomId={tourTargetRoomId ?? undefined}
-          />
 
-          {/* Mike's tour overlay — sits on top of the office canvas */}
-          {showingTour && (
+        {/* === LEFT PANEL === */}
+        {showingTour ? (
+          // Tour mode: full-width pixel office with overlay
+          <div className="relative" style={{ width: '100%' }}>
+            <PixelOffice
+              layout={content.office}
+              characters={content.characters}
+              activeRoomId={null}
+              onRoomClick={() => {}}
+              tourMode={true}
+              tourTargetRoomId={tourTargetRoomId ?? undefined}
+            />
             <MikeTour
               tour={content.mike}
               characters={content.characters}
               onStepChange={setTourTargetRoomId}
               onComplete={completeTour}
             />
-          )}
-        </div>
+          </div>
+        ) : activeContent && activeRoom && activeChar ? (
+          // Inside a room: context panel (files, connections, glossary)
+          <div style={{
+            width: '25%',
+            minWidth: '220px',
+            maxWidth: '300px',
+            borderRight: '2px solid var(--border-pixel)',
+          }}>
+            <RoomContext
+              room={activeRoom}
+              character={activeChar}
+              content={activeContent}
+              layout={content.office}
+              characters={content.characters}
+              onRoomClick={selectRoom}
+              onBack={deselectRoom}
+            />
+          </div>
+        ) : (
+          // Office overview: pixel art canvas
+          <div className="relative" style={{ width: '45%' }}>
+            <PixelOffice
+              layout={content.office}
+              characters={content.characters}
+              activeRoomId={null}
+              onRoomClick={selectRoom}
+            />
+          </div>
+        )}
 
-        {/* Right: Interaction panel — hidden during Mike's tour */}
+        {/* === RIGHT PANEL === */}
         {!showingTour && (
-          <div
-            className="overflow-y-auto"
-            style={{
-              width: gameState.activeRoomId ? '60%' : '55%',
-              borderLeft: '2px solid var(--border-pixel)',
-              background: 'var(--bg-panel)',
-              transition: 'width 0.3s',
-            }}
-          >
+          <div className="overflow-y-auto flex-1" style={{ background: 'var(--bg-panel)' }}>
             {activeContent ? (
-              // Room deep-dive: Story, Code, Challenges tabs
               <RoomHub
                 content={activeContent}
                 characters={content.characters}
@@ -114,7 +108,6 @@ export default function GameShellV2({ content }: GameShellV2Props) {
                 onBack={deselectRoom}
               />
             ) : (
-              // No room selected: show all rooms with mastery status
               <OfficeOverview
                 layout={content.office}
                 characters={content.characters}

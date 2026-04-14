@@ -31,37 +31,10 @@ export default function RoomHub({ content, characters, gameState, onXP, onBack }
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header with back button + room name */}
-      <div
-        className="flex items-center gap-3 px-4 py-3"
-        style={{ borderBottom: '2px solid var(--border-pixel)' }}
-      >
-        <button
-          onClick={onBack}
-          style={{
-            fontFamily: 'var(--font-pixel)',
-            fontSize: '8px',
-            color: 'var(--neon-gold)',
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-          }}
-        >
-          ← BACK
-        </button>
-        <div style={{ flex: 1 }}>
-          <div
-            style={{
-              fontFamily: 'var(--font-pixel)',
-              fontSize: '9px',
-              color: character?.color ?? 'var(--text-primary)',
-            }}
-          >
-            {character?.name}&apos;s Room
-          </div>
-          <div style={{ fontSize: '11px', color: 'var(--text-dim)' }}>
-            {content.roomId}
-          </div>
+      {/* Header — just room/character name (back button is in RoomContext panel) */}
+      <div className="px-4 py-3" style={{ borderBottom: '2px solid var(--border-pixel)' }}>
+        <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '9px', color: character?.color ?? 'var(--text-primary)' }}>
+          {character?.name}&apos;s Room
         </div>
       </div>
 
