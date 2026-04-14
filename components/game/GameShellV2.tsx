@@ -62,7 +62,7 @@ export default function GameShellV2({ content }: GameShellV2Props) {
       />
 
       {/* Main content: office on the left, interaction panel on the right */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* Left: Pixel art office canvas */}
         <div
           className="relative"

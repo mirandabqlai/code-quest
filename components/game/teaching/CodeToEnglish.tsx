@@ -32,7 +32,7 @@ export default function CodeToEnglish({ block, glossary }: CodeToEnglishProps) {
         {block.file}:{block.startLine}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', minHeight: '120px' }}>
         {/* Code side */}
         <div>
           <div
@@ -99,6 +99,10 @@ export default function CodeToEnglish({ block, glossary }: CodeToEnglishProps) {
               lineHeight: '1.8',
               color: 'var(--text-primary)',
               fontFamily: 'var(--font-body)',
+              background: 'var(--bg-void)',
+              border: '1px solid var(--border-pixel)',
+              borderRadius: '3px',
+              padding: '10px',
             }}
           >
             {block.english.map((line, i) => (

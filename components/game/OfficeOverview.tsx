@@ -35,6 +35,43 @@ export default function OfficeOverview({ layout, characters, gameState, onRoomCl
         Click a room to explore. Master 3 rooms to unlock the Boss Battle.
       </div>
 
+      {/* Project structure — shows which folders map to which rooms */}
+      <div
+        style={{
+          background: 'var(--bg-dark)',
+          border: '1px solid var(--border-pixel)',
+          borderRadius: '3px',
+          padding: '10px 14px',
+          marginBottom: '16px',
+        }}
+      >
+        <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '7px', color: 'var(--neon-green)', marginBottom: '8px' }}>
+          PROJECT STRUCTURE
+        </div>
+        {layout.rooms.map(room => {
+          const char = characters.find(c => c.roomId === room.id);
+          return (
+            <div
+              key={room.id}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '3px 0',
+                fontSize: '12px',
+                fontFamily: 'var(--font-code)',
+              }}
+            >
+              <span style={{ color: char?.color ?? 'var(--text-dim)', fontSize: '10px' }}>●</span>
+              <span style={{ color: 'var(--neon-green)' }}>{room.folder}</span>
+              <span style={{ color: 'var(--text-dim)' }}>→</span>
+              <span style={{ color: char?.color ?? 'var(--text-primary)' }}>{room.name}</span>
+              <span style={{ color: 'var(--text-dim)', fontSize: '11px' }}>({char?.name})</span>
+            </div>
+          );
+        })}
+      </div>
+
       {/* Overall mastery progress bar */}
       <div className="flex items-center gap-2 mb-4">
         <div style={{ flex: 1, height: '6px', background: 'var(--bg-desk)', borderRadius: '3px', overflow: 'hidden' }}>

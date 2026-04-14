@@ -23,6 +23,8 @@ export default function LandingPage() {
     setError('');
     setSteps(INITIAL_STEPS);
 
+    let gameIdRef = '';
+
     try {
       const res = await fetch('/api/generate', {
         method: 'POST',
@@ -63,7 +65,13 @@ export default function LandingPage() {
           if (line.startsWith('event: ')) {
             eventType = line.slice(7);
           } else if (line.startsWith('data: ') && eventType) {
-            const data = JSON.parse(line.slice(6));
+            let data: Record<string, unknown>;
+            try {
+              data = JSON.parse(line.slice(6));
+            } catch {
+              eventType = '';
+              continue; // Skip malformed JSON lines
+            }
 
             if (eventType === 'status') {
               const step = data.step as string;
@@ -80,15 +88,15 @@ export default function LandingPage() {
                 };
               }));
             } else if (eventType === 'tour_ready') {
-              // Mark tour step as done but DON'T redirect yet —
-              // wait for room content to finish so rooms are clickable
+              // Save gameId so we can redirect later
+              gameIdRef = data.gameId as string;
               setSteps(prev => prev.map(s => s.key === 'generating_tour' ? { ...s, done: true, active: false } : s));
             } else if (eventType === 'complete') {
-              // All content ready — NOW redirect to game
-              router.push(`/g/${data.gameId}`);
-              return;
+              // All content ready — redirect to game
+              const gid = (data.gameId as string) || gameIdRef;
+              if (gid) { router.push(`/g/${gid}`); return; }
             } else if (eventType === 'error') {
-              setError(data.message);
+              setError(data.message as string);
               setGenerating(false);
               return;
             }
@@ -97,7 +105,18 @@ export default function LandingPage() {
           }
         }
       }
+
+      // Stream ended — if we got a gameId but missed the 'complete' event, redirect anyway
+      if (gameIdRef) {
+        router.push(`/g/${gameIdRef}`);
+        return;
+      }
     } catch {
+      // If we already have a gameId, redirect instead of showing error
+      if (gameIdRef) {
+        router.push(`/g/${gameIdRef}`);
+        return;
+      }
       setError('Connection lost. Try again.');
       setGenerating(false);
     }
