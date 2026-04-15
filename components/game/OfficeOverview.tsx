@@ -3,6 +3,7 @@
 
 import type { OfficeLayout, GameCharacter, GameStateV2, GameContentV2 } from '@/lib/game/types-v2';
 import { getRoomProgress, isRoomMastered, countMasteredRooms } from '@/lib/game/xp';
+import CharacterAvatar from '@/components/game/ui/CharacterAvatar';
 
 interface OfficeOverviewProps {
   layout: OfficeLayout;
@@ -189,15 +190,11 @@ export default function OfficeOverview({ layout, characters, gameState, onRoomCl
               transition: 'transform 0.1s',
             }}
           >
-            <div style={{
-              width: '28px', height: '28px',
-              border: `2px solid ${char?.color ?? '#7a7a8e'}`, borderRadius: '2px',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: 'var(--bg-panel)',
-              fontFamily: 'var(--font-pixel)', fontSize: '6px', color: char?.color,
-            }}>
-              {(char?.name ?? '?').slice(0, 3).toUpperCase()}
-            </div>
+            <CharacterAvatar
+              name={char?.name ?? '?'}
+              color={char?.color ?? '#7a7a8e'}
+              size="sm"
+            />
             <div style={{ flex: 1 }}>
               <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '7px', color: char?.color }}>
                 {room.name}

@@ -4,14 +4,12 @@
 // not walls. Thin border tiles mark room boundaries. The result looks
 // like one big office with different "zones" — like a real open-plan office.
 
-import type { OfficeLayout, Room, Connection } from '@/lib/game/types-v2';
+import type { OfficeLayout } from '@/lib/game/types-v2';
 
 export const TILE_SIZE = 16;      // pixels per tile
 export const ROOM_WIDTH = 12;     // tiles per room (horizontal)
 export const ROOM_HEIGHT = 10;    // tiles per room (vertical)
-export const WALL_THICKNESS = 0;  // no walls between rooms — open floor
 export const BORDER_THICKNESS = 1; // thin floor border between rooms
-export const DOORWAY_WIDTH = 2;   // tiles wide for doorway openings (unused in open floor)
 
 // Top strip for Mike's manager area
 export const MIKE_STRIP_HEIGHT = 3;
@@ -110,20 +108,11 @@ export function buildTileMap(layout: OfficeLayout): TileMap {
 
   // Outer walls — only on the very edges of the office
   for (let col = 0; col < totalW; col++) {
-    if (tiles[MIKE_STRIP_HEIGHT][col].type !== 'mike-floor') {
-      // Don't overwrite mike area
-    }
-    // Top wall (above Mike's area)
-    // Bottom wall
-    if (totalH - 1 >= 0) {
-      tiles[totalH - 1][col] = { type: 'wall', roomId: null, color: '#2c2c54' };
-    }
+    tiles[totalH - 1][col] = { type: 'wall', roomId: null, color: '#2c2c54' };
   }
   for (let row = 0; row < totalH; row++) {
     tiles[row][0] = { type: 'wall', roomId: null, color: '#2c2c54' };
-    if (totalW - 1 >= 0) {
-      tiles[row][totalW - 1] = { type: 'wall', roomId: null, color: '#2c2c54' };
-    }
+    tiles[row][totalW - 1] = { type: 'wall', roomId: null, color: '#2c2c54' };
   }
 
   return { width: totalW, height: totalH, tiles, rooms: roomBounds };

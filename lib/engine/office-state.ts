@@ -5,7 +5,7 @@
 
 import type {
   OfficeLayout, GameCharacter, EngineCharacter,
-  FurnitureItem, AnimationState, Direction,
+  FurnitureItem, AnimationState,
 } from '@/lib/game/types-v2';
 import type { TileMap } from './tile-map';
 import { buildTileMap, getRoomCenter, TILE_SIZE, ROOM_WIDTH, ROOM_HEIGHT } from './tile-map';
@@ -70,58 +70,48 @@ export function createOfficeState(
   return { tileMap, furniture, characters: engineChars, mikeCharacter: null };
 }
 
-/** Update all character animations. Called every frame. */
-export function updateCharacters(state: OfficeStateData, dt: number): void {
-  for (const char of state.characters) {
-    // Advance animation frame
-    char.frame += dt * 4; // 4 frames per second for animations
+/** Move a single character toward its target and advance animation. */
+function stepCharacter(
+  char: EngineCharacter,
+  dt: number,
+  arrivalState: AnimationState
+): void {
+  char.frame += dt * 4; // 4 frames per second for animations
 
-    // Move toward target
-    if (char.state === 'walk') {
-      const dx = char.targetX - char.x;
-      const dy = char.targetY - char.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
+  if (char.state !== 'walk') return;
 
-      if (dist < 2) {
-        // Arrived
-        char.x = char.targetX;
-        char.y = char.targetY;
-        char.state = 'idle';
-      } else {
-        const step = char.speed * dt;
-        char.x += (dx / dist) * step;
-        char.y += (dy / dist) * step;
-        // Face direction of movement
-        if (Math.abs(dx) > Math.abs(dy)) {
-          char.direction = dx > 0 ? 'right' : 'left';
-        } else {
-          char.direction = dy > 0 ? 'down' : 'up';
-        }
-      }
+  const dx = char.targetX - char.x;
+  const dy = char.targetY - char.y;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+
+  if (dist < 2) {
+    // Arrived at target
+    char.x = char.targetX;
+    char.y = char.targetY;
+    char.state = arrivalState;
+  } else {
+    const step = char.speed * dt;
+    char.x += (dx / dist) * step;
+    char.y += (dy / dist) * step;
+    // Face direction of movement
+    if (Math.abs(dx) > Math.abs(dy)) {
+      char.direction = dx > 0 ? 'right' : 'left';
+    } else {
+      char.direction = dy > 0 ? 'down' : 'up';
     }
   }
+}
 
-  // Update Mike if present
+/** Update all character animations. Called every frame. */
+export function updateCharacters(state: OfficeStateData, dt: number): void {
+  // Regular characters return to 'idle' when they reach their target
+  for (const char of state.characters) {
+    stepCharacter(char, dt, 'idle');
+  }
+
+  // Mike switches to 'talk' when he arrives (he's giving a tour)
   if (state.mikeCharacter) {
-    const mike = state.mikeCharacter;
-    mike.frame += dt * 4;
-    if (mike.state === 'walk') {
-      const dx = mike.targetX - mike.x;
-      const dy = mike.targetY - mike.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist < 2) {
-        mike.x = mike.targetX;
-        mike.y = mike.targetY;
-        mike.state = 'talk';
-      } else {
-        const step = mike.speed * dt;
-        mike.x += (dx / dist) * step;
-        mike.y += (dy / dist) * step;
-        mike.direction = Math.abs(dx) > Math.abs(dy)
-          ? (dx > 0 ? 'right' : 'left')
-          : (dy > 0 ? 'down' : 'up');
-      }
-    }
+    stepCharacter(state.mikeCharacter, dt, 'talk');
   }
 }
 

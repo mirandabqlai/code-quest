@@ -7,6 +7,7 @@
 'use client';
 
 import type { GameCharacter, OfficeLayout, CharacterContent } from '@/lib/game/types-v2';
+import CharacterAvatar from '@/components/game/ui/CharacterAvatar';
 
 interface RoomContextProps {
   room: OfficeLayout['rooms'][0];
@@ -60,16 +61,7 @@ export default function RoomContext({
         borderBottom: '1px solid var(--border-pixel)',
       }}>
         <div className="flex gap-3 items-center" style={{ marginBottom: '8px' }}>
-          <div style={{
-            width: '40px', height: '40px',
-            border: `2px solid ${character.color}`,
-            borderRadius: '3px',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontFamily: 'var(--font-pixel)', fontSize: '8px',
-            color: character.color, background: 'var(--bg-panel)',
-          }}>
-            {character.name.slice(0, 3).toUpperCase()}
-          </div>
+          <CharacterAvatar name={character.name} color={character.color} size="lg" />
           <div>
             <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '9px', color: character.color }}>
               {character.name}

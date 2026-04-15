@@ -1,11 +1,10 @@
 // lib/engine/game-loop.ts
 //
-// The game loop runs ~60 times per second and calls update() then draw().
+// The game loop runs ~60 times per second and calls update().
 // Delta time is clamped to prevent physics jumps when the tab is backgrounded.
 
 export interface GameLoopCallbacks {
   update: (dt: number) => void;  // dt = seconds since last frame
-  draw: (ctx: CanvasRenderingContext2D) => void;
 }
 
 export class GameLoop {
@@ -36,8 +35,6 @@ export class GameLoop {
     this.lastTime = now;
 
     this.callbacks.update(dt);
-    // draw is called by the renderer which owns the canvas context
-
     this.animationId = requestAnimationFrame(this.tick);
   };
 }

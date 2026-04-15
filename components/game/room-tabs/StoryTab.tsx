@@ -3,9 +3,11 @@
 
 import { useState } from 'react';
 import type { CharacterContent, GameCharacter } from '@/lib/game/types-v2';
+import { DEFAULT_COLOR } from '@/lib/game/character-utils';
 import GroupChat from '@/components/game/teaching/GroupChat';
 import DataFlowAnimation from '@/components/game/teaching/DataFlowAnimation';
 import CodeToEnglish from '@/components/game/teaching/CodeToEnglish';
+import CharacterAvatar from '@/components/game/ui/CharacterAvatar';
 import PixelButton from '@/components/game/ui/PixelButton';
 
 interface StoryTabProps {
@@ -51,24 +53,10 @@ export default function StoryTab({ content, characters, onComplete }: StoryTabPr
       {/* Step content — rendered based on dialogue step type */}
       {currentStep.type === 'talk' && (
         <div className="flex gap-3 items-start mb-4">
-          <div
-            style={{
-              width: '36px',
-              height: '36px',
-              border: `2px solid ${character?.color ?? '#7a7a8e'}`,
-              borderRadius: '2px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '8px',
-              fontFamily: 'var(--font-pixel)',
-              color: character?.color,
-              background: 'var(--bg-dark)',
-              flexShrink: 0,
-            }}
-          >
-            {(character?.name ?? '?').slice(0, 3).toUpperCase()}
-          </div>
+          <CharacterAvatar
+            name={character?.name ?? '?'}
+            color={character?.color ?? DEFAULT_COLOR}
+          />
           <div
             style={{
               background: 'var(--bg-dark)',

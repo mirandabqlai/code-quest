@@ -6,7 +6,7 @@ import type { OfficeLayout, GameCharacter } from '@/lib/game/types-v2';
 import { GameLoop } from '@/lib/engine/game-loop';
 import {
   createCamera, updateCamera, focusOverview, focusRoom, followCharacter,
-  screenToWorld, worldToScreen,
+  screenToWorld,
 } from '@/lib/engine/camera';
 import { renderScene } from '@/lib/engine/renderer';
 import { TILE_SIZE, ROOM_WIDTH, ROOM_HEIGHT, getRoomCenter } from '@/lib/engine/tile-map';
@@ -117,9 +117,6 @@ export default function PixelOffice({
     resize();
     window.addEventListener('resize', resize);
 
-    // The game loop calls update() every frame. We do both physics and
-    // rendering inside update() because the GameLoop.tick only invokes update,
-    // not draw (draw requires a ctx which tick doesn't have).
     const gameLoop = new GameLoop({
       update(dt: number) {
         const state = stateRef.current;
@@ -144,7 +141,6 @@ export default function PixelOffice({
           canvas.height
         );
       },
-      draw() {}, // rendering is handled inside update() above
     });
     loopRef.current = gameLoop;
     gameLoop.start();

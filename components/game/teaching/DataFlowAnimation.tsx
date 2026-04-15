@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import type { DataFlowStep, GameCharacter } from '@/lib/game/types-v2';
+import { findCharacter, DEFAULT_COLOR } from '@/lib/game/character-utils';
 
 interface DataFlowAnimationProps {
   steps: DataFlowStep[];
@@ -17,10 +18,7 @@ export default function DataFlowAnimation({ steps, characters }: DataFlowAnimati
   const [activeStep, setActiveStep] = useState(-1);
   const [playing, setPlaying] = useState(false);
 
-  const getCharacter = (id: string) =>
-    id === 'mike'
-      ? { name: 'Mike', color: '#00ff41', id: 'mike' }
-      : characters.find(c => c.id === id);
+  const getChar = (id: string) => findCharacter(characters, id);
 
   const play = useCallback(() => {
     setActiveStep(-1);
@@ -51,7 +49,7 @@ export default function DataFlowAnimation({ steps, characters }: DataFlowAnimati
         style={{ padding: '12px 0' }}
       >
         {steps.map((step, i) => {
-          const char = getCharacter(step.characterId);
+          const char = getChar(step.characterId);
           const isActive = i === activeStep;
           const isPast = i < activeStep;
 
@@ -61,13 +59,13 @@ export default function DataFlowAnimation({ steps, characters }: DataFlowAnimati
               <div
                 style={{
                   padding: '8px 12px',
-                  border: `2px solid ${char?.color ?? '#7a7a8e'}`,
+                  border: `2px solid ${char?.color ?? DEFAULT_COLOR}`,
                   borderRadius: '3px',
                   fontFamily: 'var(--font-pixel)',
                   fontSize: '7px',
                   textAlign: 'center',
                   background: isActive ? `${char?.color}22` : 'var(--bg-dark)',
-                  color: char?.color ?? '#7a7a8e',
+                  color: char?.color ?? DEFAULT_COLOR,
                   boxShadow: isActive ? `0 0 12px ${char?.color}44` : 'none',
                   transform: isActive ? 'scale(1.05)' : 'scale(1)',
                   transition: 'all 0.3s',
