@@ -5,9 +5,32 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { AcademyModule } from '@/lib/academy/types';
 import { ACADEMY_PARTS } from '@/lib/academy/types';
+
+// Persist academy progress in localStorage
+const STORAGE_KEY = 'code-quest-academy';
+
+interface AcademyProgress {
+  xp: number;
+  completedModules: string[];
+}
+
+function loadProgress(): AcademyProgress {
+  if (typeof window === 'undefined') return { xp: 0, completedModules: [] };
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) return JSON.parse(saved);
+  } catch { /* ignore */ }
+  return { xp: 0, completedModules: [] };
+}
+
+function saveProgress(progress: AcademyProgress) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
+  } catch { /* ignore */ }
+}
 import XPBar from '@/components/game/ui/XPBar';
 import PixelButton from '@/components/game/ui/PixelButton';
 import SmartQuiz from '@/components/game/teaching/SmartQuiz';
@@ -40,9 +63,36 @@ interface AcademyShellProps {
 export default function AcademyShell({ module }: AcademyShellProps) {
   const [phase, setPhase] = useState<Phase>('intro');
   const [introIndex, setIntroIndex] = useState(0);
-  const [xp, setXp] = useState(0);
+  const [progress, setProgress] = useState<AcademyProgress>({ xp: 0, completedModules: [] });
 
+  // Load from localStorage on mount
+  useEffect(() => {
+    setProgress(loadProgress());
+  }, []);
+
+  const xp = progress.xp;
   const part = ACADEMY_PARTS.find(p => p.number === module.part);
+
+  function addXP(amount: number) {
+    setProgress(prev => {
+      const updated = { ...prev, xp: prev.xp + amount };
+      saveProgress(updated);
+      return updated;
+    });
+  }
+
+  function markComplete() {
+    setProgress(prev => {
+      const updated = {
+        ...prev,
+        completedModules: prev.completedModules.includes(module.id)
+          ? prev.completedModules
+          : [...prev.completedModules, module.id],
+      };
+      saveProgress(updated);
+      return updated;
+    });
+  }
 
   function handleIntroNext() {
     if (introIndex < module.mikeIntro.length - 1) {
@@ -57,12 +107,14 @@ export default function AcademyShell({ module }: AcademyShellProps) {
   }
 
   function handleQuizCorrect() {
-    setXp(prev => prev + module.xpReward + 50);
+    addXP(module.xpReward + 50);
+    markComplete();
     setPhase('complete');
   }
 
   function handleQuizWrong() {
-    setXp(prev => prev + module.xpReward);
+    addXP(module.xpReward);
+    markComplete();
     setPhase('complete');
   }
 

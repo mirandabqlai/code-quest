@@ -1,9 +1,7 @@
 // app/academy/page.tsx
-//
-// Module selector page for AI Academy.
-// Shows all 17 modules grouped by Part (1-5). Each module is a clickable card.
-// This is a server component — no hooks, no interactivity beyond links.
+'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { MODULES, getModulesByPart } from '@/lib/academy/modules';
 import { ACADEMY_PARTS } from '@/lib/academy/types';
@@ -30,6 +28,18 @@ const GAME_TYPE_LABELS: Record<string, string> = {
 };
 
 export default function AcademyPage() {
+  const [completed, setCompleted] = useState<string[]>([]);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('code-quest-academy');
+      if (saved) {
+        const progress = JSON.parse(saved);
+        setCompleted(progress.completedModules ?? []);
+      }
+    } catch { /* ignore */ }
+  }, []);
+
   return (
     <main
       className="min-h-screen p-6 overflow-y-auto"
@@ -96,13 +106,13 @@ export default function AcademyPage() {
                     href={`/academy/${mod.id}`}
                     className="group block border-2 border-[var(--border-pixel)] bg-[var(--bg-panel)] p-4 transition-all duration-100 hover:border-[var(--neon-green)] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[2px_2px_0_var(--neon-green)]"
                   >
-                    {/* Module number + duration */}
+                    {/* Module number + duration + completion */}
                     <div className="flex justify-between items-center mb-2">
                       <span
                         className="text-[var(--neon-gold)]"
                         style={{ fontFamily: 'var(--font-pixel)', fontSize: '7px' }}
                       >
-                        MODULE {mod.moduleNumber}
+                        {completed.includes(mod.id) ? '✓ ' : ''}MODULE {mod.moduleNumber}
                       </span>
                       <span
                         className="text-[var(--text-dim)]"

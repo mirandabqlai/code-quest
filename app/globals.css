@@ -29,8 +29,9 @@
     background: var(--bg-void);
     color: var(--text-primary);
     font-family: var(--font-body);
-    overflow: hidden;
-    height: 100%;
+    /* Don't restrict overflow globally — some pages need to scroll (Academy).
+       Game pages manage their own overflow internally with h-screen + overflow-hidden. */
+    min-height: 100%;
   }
 }
 
